@@ -110,13 +110,14 @@ class BaseChatModel(ABC):
         if stream and delta_stream:
             # No retry for delta streaming
             output = _call_model_service()
+            
         elif stream and (not delta_stream):
             output = retry_model_service_iterator(_call_model_service,
                                                   max_retries=self.max_retries)
         else:
             output = retry_model_service(_call_model_service,
                                          max_retries=self.max_retries)
-
+            
         if isinstance(output, list):
             output = self._postprocess_messages(output,
                                                 fncall_mode=fncall_mode)

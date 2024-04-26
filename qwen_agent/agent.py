@@ -84,7 +84,6 @@ class Agent(ABC):
                 kwargs['lang'] = 'zh'
             else:
                 kwargs['lang'] = 'en'
-
         for rsp in self._run(messages=new_messages, **kwargs):
             for i in range(len(rsp)):
                 if not rsp[i].name and self.name:
@@ -137,15 +136,20 @@ class Agent(ABC):
             The response generator of LLM.
         """
         messages = copy.deepcopy(messages)
+
         if messages[0][ROLE] != SYSTEM:
+            
             messages.insert(0, Message(role=SYSTEM,
                                        content=self.system_message))
         elif isinstance(messages[0][CONTENT], str):
+            
             messages[0][CONTENT] = self.system_message + messages[0][CONTENT]
         else:
+            
             assert isinstance(messages[0][CONTENT], list)
             messages[0][CONTENT] = [ContentItem(text=self.system_message)
                                     ] + messages[0][CONTENT]
+        
         return self.llm.chat(messages=messages,
                              functions=functions,
                              stream=stream)

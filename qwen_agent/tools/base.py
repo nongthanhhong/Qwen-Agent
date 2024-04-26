@@ -8,7 +8,7 @@ from qwen_agent.utils.utils import logger
 TOOL_REGISTRY = {}
 
 
-def register_tool(name, allow_overwrite=False):
+def register_tool(name, allow_overwrite=True):
 
     def decorator(cls):
         if name in TOOL_REGISTRY:
@@ -46,7 +46,8 @@ class BaseTool(ABC):
 
         self.name_for_human = self.cfg.get('name_for_human', self.name)
         if not hasattr(self, 'args_format'):
-            self.args_format = self.cfg.get('args_format', '此工具的输入应为JSON对象。')
+            self.args_format = self.cfg.get('args_format', ' ')
+            # self.args_format = self.cfg.get('args_format', '此工具的输入应为JSON对象。')
         self.function = self._build_function()
         self.file_access = False
 

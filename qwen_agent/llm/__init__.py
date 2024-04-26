@@ -29,6 +29,7 @@ def get_chat_model(cfg: Optional[Dict] = None) -> BaseChatModel:
     Returns:
         LLM object.
     """
+    
     cfg = cfg or {}
     if 'model_type' in cfg:
         model_type = cfg['model_type']

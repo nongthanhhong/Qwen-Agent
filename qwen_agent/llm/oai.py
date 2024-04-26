@@ -15,6 +15,7 @@ from qwen_agent.llm.text_base import BaseTextChatModel
 from qwen_agent.log import logger
 
 from .schema import ASSISTANT, Message
+import sys
 
 
 @register_llm('oai')
@@ -77,10 +78,12 @@ class TextChatAtOAI(BaseTextChatModel):
         messages = [msg.model_dump() for msg in messages]
         logger.debug(f'*{pformat(messages, indent=2)}*')
         try:
+            
             response = self._chat_complete_create(model=self.model,
                                                   messages=messages,
                                                   stream=True,
                                                   **self.generate_cfg)
+
             if delta_stream:
                 for chunk in response:
                     if hasattr(chunk.choices[0].delta,
@@ -106,6 +109,7 @@ class TextChatAtOAI(BaseTextChatModel):
                                                   messages=messages,
                                                   stream=False,
                                                   **self.generate_cfg)
+            
             return [Message(ASSISTANT, response.choices[0].message.content)]
         except OpenAIError as ex:
             raise ModelServiceError(exception=ex)

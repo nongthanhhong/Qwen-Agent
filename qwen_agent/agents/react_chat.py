@@ -14,20 +14,24 @@ PROMPT_REACT = """Answer the following questions as best you can. You have acces
 
 {tool_descs}
 
-Use the following format:
 
-Question: the input question you must answer
-Thought: you should always think about what to do
-Action: the action to take, should be one of [{tool_names}]
-Action Input: the input to the action
-Observation: the result of the action
+Question: the input question you must answer.
+
+You must use the following format to solve the question:
+
+Plan: A brief step-by-step planning to solve the Question.
+Thought: think about what you have done and what to do next.
+Action: the action to take, should be one of [{tool_names}].
+Action Input: the input to the action, format {{"arg_1": value, "arg_2": value, ...}}
+Observation: the result of the action.
 ... (this Thought/Action/Action Input/Observation can be repeated zero or more times)
-Thought: I now know the final answer
-Final Answer: the final answer to the original input question
 
-Begin!
+Final Answer: You done all sub-tasks and gather enough informations. Use it to give the final answer for the original input question.
 
-Question: {query}"""
+Begin!!!
+
+Question: {query}.
+"""
 
 
 class ReActChat(FnCallAgent):
@@ -52,19 +56,33 @@ class ReActChat(FnCallAgent):
         self.llm.generate_cfg['stop'] = stop + [
             x for x in fn_stop if x not in stop
         ]
+        self.count = 0
 
     def _run(self,
              messages: List[Message],
              lang: str = 'en',
              **kwargs) -> Iterator[List[Message]]:
+        
         ori_messages = messages
+        
+
+        self.steps = []
+
         messages = self._preprocess_react_prompt(messages)
+
+        self.steps.append(messages.copy()[-1].content)
+        self.count += 1
+
 
         num_llm_calls_available = MAX_LLM_CALL_PER_RUN
         response = []
-        while True and num_llm_calls_available > 0:
+
+        
+        while num_llm_calls_available > 0:
             num_llm_calls_available -= 1
+
             output_stream = self._call_llm(messages=messages)
+
             output = []
 
             # Yield the streaming response
@@ -74,8 +92,7 @@ class ReActChat(FnCallAgent):
                     if not response_tmp:
                         yield output
                     else:
-                        response_tmp[-1][CONTENT] = response[-1][
-                            CONTENT] + output[-1][CONTENT]
+                        response_tmp[-1][CONTENT] = response[-1][CONTENT] + output[-1][CONTENT]
                         yield response_tmp
             # Record the incremental response
             assert len(output) == 1 and output[-1][ROLE] == ASSISTANT
@@ -85,14 +102,23 @@ class ReActChat(FnCallAgent):
                 response[-1][CONTENT] += output[-1][CONTENT]
 
             output = output[-1][CONTENT]
+            
+            self.steps.append(str(output))
 
             use_tool, action, action_input, text = self._detect_tool(output)
+            
 
             if use_tool:
                 observation = self._call_tool(action,
                                               action_input,
-                                              messages=ori_messages)
+                                              messages=ori_messages,
+                                              **kwargs)
+                
+
                 observation = f'\nObservation: {observation}\nThought: '
+                
+                self.steps.append(observation)
+
                 response[-1][CONTENT] += observation
                 yield response
                 if isinstance(messages[-1][CONTENT], list):
@@ -116,9 +142,9 @@ class ReActChat(FnCallAgent):
                 break
 
     def _detect_tool(self, text: str) -> Tuple[bool, str, str, str]:
-        special_func_token = '\nAction:'
-        special_args_token = '\nAction Input:'
-        special_obs_token = '\nObservation:'
+        special_func_token = 'Action:'
+        special_args_token = 'Action Input:'
+        special_obs_token = 'Observation:'
         func_name, func_args = None, None
         i = text.rfind(special_func_token)
         j = text.rfind(special_args_token)
@@ -181,4 +207,5 @@ class ReActChat(FnCallAgent):
                                          query=query)
             new_content.insert(0, ContentItem(text=prompt))
             messages[-1][CONTENT] = new_content
+
             return messages

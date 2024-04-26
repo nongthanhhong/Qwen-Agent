@@ -7,7 +7,7 @@ from qwen_agent.llm.schema import DEFAULT_SYSTEM_MESSAGE, FUNCTION, Message
 from qwen_agent.memory import Memory
 from qwen_agent.tools import BaseTool
 
-MAX_LLM_CALL_PER_RUN = 8
+MAX_LLM_CALL_PER_RUN =10
 
 
 class FnCallAgent(Agent):

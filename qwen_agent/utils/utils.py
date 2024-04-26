@@ -108,7 +108,8 @@ def get_current_date_str(
         cur_time = datetime.datetime.utcnow() + datetime.timedelta(
             hours=hours_from_utc)
     if lang == 'en':
-        date_str = 'Current date: ' + cur_time.strftime('%A, %B %d, %Y')
+        # date_str = 'Current date: ' + cur_time.strftime('%A, %B %d, %Y')
+        date_str = cur_time.strftime('%H:%M:%S, %A, %B %d, %Y')
     elif lang == 'zh':
         cur_time = cur_time.timetuple()
         date_str = f'当前时间：{cur_time.tm_year}年{cur_time.tm_mon}月{cur_time.tm_mday}日，星期'
@@ -284,10 +285,11 @@ def get_function_description(function: Dict) -> str:
         'en':
         '### {name_for_human}\n\n{name_for_model}: {description_for_model} Parameters: {parameters} {args_format}'
     }
-    if has_chinese_chars(function):
-        tool_desc = tool_desc_template['zh']
-    else:
-        tool_desc = tool_desc_template['en']
+    # if has_chinese_chars(function):
+    #     tool_desc = tool_desc_template['zh']
+    # else:
+
+    tool_desc = tool_desc_template['en']
 
     name = function.get('name', None)
     name_for_human = function.get('name_for_human', name)
